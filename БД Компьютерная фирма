@@ -71,28 +71,252 @@
   inner join Product on Product.model = PC.model 
   WHERE maker = 'A'
   
-Задание 14: Найдите класс, имя и страну для кораблей из таблицы Ships, имеющих не менее 10 орудий.
+Задание 14: Найдите размеры жестких дисков, совпадающих у двух и более PC. Вывести: HD
 Решение:
+  SELECT hd
+  from PC
+  GROUP by hd
+  having count(model)>=2
+  
+Задание 15: Найдите пары моделей PC, имеющих одинаковые скорость и RAM. В результате каждая пара указывается только один раз, т.е. (i,j), но не (j,i), Порядок вывода: модель с большим номером, модель с меньшим номером, скорость и RAM.
+Решение:
+  select distinct A.model, B.model, A.speed, A.ram from PC as A, PC as B
+  where A.speed = B.speed and A.ram=B.ram and A.model > B.model
 
+Задание 16: Найдите модели ПК-блокнотов, скорость которых меньше скорости каждого из ПК. Вывести: type, model, speed
+Решение:
+  SELECT DISTINCT p.type, l.model, l.speed
+  FROM Product p, Laptop l, PC c
+  WHERE l.speed < (SELECT MIN (speed) 
+                 FROM PC) AND 
+      p.type = 'laptop'
 
+Задание 17: Найдите производителей самых дешевых цветных принтеров. Вывести: maker, price
+Решение:
+  Select maker, min(Printer.price) from product
+  inner join Printer on Product.model = Printer.model
+  where color = 'y' and price in (select min(price) from printer where color = 'y')
+  group by maker, Printer.price
 
+Задание 18: Для каждого производителя, имеющего модели в таблице Laptop, найдите средний размер экрана выпускаемых им ПК-блокнотов. Вывести: maker, средний размер экрана.
+Решение: 
+  SELECT Product.Maker, AVG(screen) from Laptop 
+  inner join Product on Product.model = Laptop.model 
+  GROUP BY Product.maker
 
+Задание 19: Найдите производителей, выпускающих по меньшей мере три различных модели ПК. Вывести: Maker, число моделей ПК.
+Решение:
+  SELECT maker, COUNT(model)
+  FROM product
+  WHERE type = 'pc'
+  GROUP BY product.maker
+  HAVING COUNT (DISTINCT model) >= 3
+  
+Задание 20: Найдите максимальную цену ПК, выпускаемых каждым производителем, у которого есть модели в таблице PC. 
+Вывести: maker, максимальная цена.
+Решение:
+  Select Maker, max(PC.price) from Product 
+  inner join PC 
+  on PC.model = Product.model
+  group by Maker
+  
+Задание 21: Для каждого значения скорости ПК, превышающего 600 МГц, определите среднюю цену ПК с такой же скоростью. Вывести: speed, средняя цена.
+Решение:
+  Select speed, avg(price) from PC 
+  where speed>600 
+  group by speed
 
+Задание 22: Найдите производителей, которые производили бы как ПК со скоростью не менее 750 МГц, так и ПК-блокноты со скоростью не менее 750 МГц. Вывести: Maker
+Решение:
+  select maker from product 
+  inner join PC on Product.model = PC.model
+  where PC.speed >= 750
+  intersect
+  select maker from product
+  inner join Laptop on Laptop.model=Product.model 
+  where Laptop.speed >=750
+  
+Задание 23: Перечислите номера моделей любых типов, имеющих самую высокую цену по всей имеющейся в базе данных продукции.
+Решение: 
+  with help as (
+  select model, price from PC 
+  where price = (select max(price) from PC)
+  union
+  select model, price from Laptop 
+  where price =(select max(price) from Laptop)
+  union
+  select model, price from Printer 
+  where price =(select max(price) from Printer)
+  )
+  select model from help 
+  where price =(select max(price) from help)
 
+Задание 24: Найдите производителей принтеров, которые производят ПК с наименьшим объемом RAM и с самым быстрым процессором среди всех ПК, имеющих наименьший объем RAM. Вывести: Maker
+Решение:
+  Select distinct maker from product
+  where model in (select model from PC 
+  where ram = (select min(ram) from PC) 
+  and speed = (select max(speed) from PC 
+  where ram = (select min(ram) from PC))) 
+  and maker in (select maker from product 
+  where type = 'printer')
 
+Задание 25: Найдите среднюю цену ПК и ПК-блокнотов, выпущенных производителем A (латинская буква). Вывести: одна общая средняя цена.
+Решение:
+  with help1 as (
+  select sum(price) as s1, count(price) as p1 from PC 
+  left join product on Product.model=PC.model 
+  where maker = 'A'
+  union all
+  select sum(price) as s1, count(price) as p1 from Laptop 
+  left join product on Product.model=Laptop.model 
+  where maker = 'A'
+  )
+  select sum(s1)/sum(p1) from help1
 
+Задание 26: Найдите средний размер диска ПК каждого из тех производителей, которые выпускают и принтеры. Вывести: maker, средний размер HD.
+Решение:
+  Select  maker, avg(PC.hd) from product 
+  inner join pc on PC.model = Product.model 
+  where maker in 
+  (select maker from product 
+  where type = 'Printer')
+  group by maker
 
+Задание 27: Используя таблицу Product, определить количество производителей, выпускающих по одной модели.
+Решение:
+  Select count(maker) 
+  from Product 
+  where maker in 
+  (select maker 
+  from Product
+  group by maker 
+  having count(model) = 1)
+  
+Задание 28: В таблице Product найти модели, которые состоят только из цифр или только из латинских букв (A-Z, без учета регистра). Вывод: номер модели, тип модели.
+Решение:
+  SELECT model, type
+  FROM product
+  WHERE upper(model) NOT like '%[^A-Z]%'
+  OR model not like '%[^0-9]%'
 
+Задание 29: Найти производителей, которые выпускают более одной модели, при этом все выпускаемые производителем модели являются продуктами одного типа. Вывести: maker, type
+Решение:
+  select maker, max(type)
+  from product 
+  group by maker
+  having count(distinct type) = 1 and count (model) > 1
 
+Задание 30: Для каждого производителя, у которого присутствуют модели хотя бы в одной из таблиц PC, Laptop или Printer,
+определить максимальную цену на его продукцию. Вывод: имя производителя, если среди цен на продукцию данного производителя присутствует NULL, то выводить для этого производителя NULL, иначе максимальную цену.
+Решение:
+  with help as (
+  select model, price from PC 
+  union
+  select model, price from Laptop 
+  union
+  select model, price from Printer )
+  select product.maker, 
+  case when count(price) = count(*)
+  then max(price) end
+  from product, help
+  where product.model = help.model
+  group by product.maker
+  
+Задание 31: Найти тех производителей ПК, все модели ПК которых имеются в таблице PC.
+Решение:
+  select product.maker 
+  from product 
+  left join pc on pc.model=product.model 
+  where type = 'PC' 
+  group by product.maker 
+  having count(product.model)=count(pc.model)
 
+Задание 32: Найти производителей любой компьютерной техники, у которых нет моделей ПК, не представленных в таблице PC.
+Решение:
+  Select distinct maker from product 
+  where maker not in 
+  (select maker from Product 
+  where type = 'PC' 
+  and 
+  model not in (select model from PC))
+  
+Задание 33: Найти производителей, которые выпускают только принтеры или только PC. При этом искомые производители PC должны выпускать не менее 3 моделей.
+Решение:
+  select maker
+  from product
+  group by maker
+  having count(distinct type) = 1 and
+       ((min(type) = 'pc' and count(model) > 2) or
+       (min(type) = 'printer'))
 
+Задание 34: Найти производителей, у которых больше всего моделей в таблице Product, а также тех, у которых меньше всего моделей. Вывод: maker, число моделей
+Решение:
+  select maker, count(distinct model) res from product 
+  group by maker 
+  having count(distinct(model)) >= ALL (select count(distinct model) 
+  from product 
+  group by maker)
+  union
+  select maker, count(distinct model) res from product 
+  group by maker 
+  having(count(distinct(model))) <= ALL (select count(distinct model) 
+  from product 
+  group by maker)
+  
+Задание 35: Вывести все строки из таблицы Product, кроме трех строк с наименьшими номерами моделей и трех строк с наибольшими номерами моделей.
+Решение:
+  Select * from product 
+  where model not in 
+  (select top 3 with ties model from product 
+  order by model
+  union
+  select top 3 with ties model from product 
+  order by model desc)
 
+Задание 36: Таблица Printer сортируется по возрастанию поля code. Упорядоченные строки составляют группы: первая группа начинается с первой строки, каждая строка со значением color='n' начинает новую группу, группы строк не перекрываются. 
+Для каждой группы определить: наибольшее значение поля model (max_model), количество уникальных типов принтеров (distinct_types_cou) и среднюю цену (avg_price). 
+Для всех строк таблицы вывести: code, model, color, type, price, max_model, distinct_types_cou, avg_price.
+Решение:
+  with help as (SELECT code, model, color, type, price,  
+  count(iif(color = 'n',0,null)) over( ORDER BY code) grp 
+  FROM Printer)
 
-
-
-
-
-
-
-
+  select help.code, help.model, help.color, help.type, help.price, h.max_model, h.distct_types, h.avg_price from help, 
+  (select 
+  max(model) max_model, 
+  count(distinct type) distct_types, 
+  avg(price) avg_price, 
+  grp 
+  from help 
+  group by grp) h 
+  where help.grp=h.grp
  
+Задание 37: Статистики Алиса, Белла, Вика и Галина нумеруют строки у таблицы Product.
+Все четверо упорядочили строки таблицы по возрастанию названий производителей.
+Алиса присваивает новый номер каждой строке, строки одного производителя она упорядочивает по номеру модели.
+Трое остальных присваивают один и тот же номер всем строкам одного производителя.
+Белла присваивает номера начиная с единицы, каждый следующий производитель увеличивает номер на 1.
+У Вики каждый следующий производитель получает такой же номер, какой получила бы первая модель этого производителя у Алисы.
+Галина присваивает каждому следующему производителю тот же номер, который получила бы его последняя модель у Алисы.
+Вывести: maker, model, номера строк получившиеся у Алисы, Беллы, Вики и Галины соответственно.
+Решение:
+  Select maker, model, 
+  row_number() over (order by maker, model), 
+  dense_rank() over (order by maker), 
+  rank() over (order by maker), 
+  count(*) over(order by maker) from product
+
+
+
+
+
+
+
+
+
+
+
+
+
+
