@@ -1,0 +1,20 @@
+Задание 1: Посчитать остаток денежных средств на всех пунктах приема на начало дня 15/04/01 для базы данных с отчетностью не чаще одного раза в день.
+Решение:
+  Select 
+  (select sum(inc) from income_o where date < '2001-04-15') 
+  - 
+  (select sum(out) from outcome_o where date < '2001-04-15')
+
+Задание 2: Посчитать остаток денежных средств на всех пунктах приема для базы данных с отчетностью не чаще одного раза в день.
+Решение:
+  select
+  sum(coalesce(inc,0))-sum(coalesce(out,0)) as remain
+  from income_o i
+  full join outcome_o o on i.date=o.date and i.point=o.point
+
+
+
+
+
+
+
