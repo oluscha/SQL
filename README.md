@@ -1,7 +1,7 @@
 # SQL
 SQL queries to different databases
 
-# Databases (полное описание по [ссылке](javascript:openHelp('/help/select13.php#db_1')
+# Databases (полное описание по [ссылке](javascript:openHelp('/help/select13.php#db_1')) :
   + Компьютерная фирма - 4 таблицы:
     - Product(maker, model, type)
     Таблица Product представляет производителя (maker), номер модели (model) и тип ('PC' - ПК, 'Laptop' - ПК-блокнот или 'Printer' - принтер). Предполагается, что номера моделей в таблице Product уникальны для всех производителей и типов продуктов.
