@@ -1,0 +1,155 @@
+Задание 1: Найдите класс, имя и страну для кораблей из таблицы Ships, имеющих не менее 10 орудий.
+Решение: 
+  SELECT Ships.class,  name, country from Ships 
+  INNER JOIN Classes ON Classes.class = Ships.class 
+  where Classes.numGuns >= 10
+  
+Задание 2: Для классов кораблей, калибр орудий которых не менее 16 дюймов, укажите класс и страну.
+Решение:
+  Select class, country from Classes 
+  where bore >= 16
+  
+Задание 3: Одной из характеристик корабля является половина куба калибра его главных орудий (mw). С точностью до 2 десятичных знаков определите среднее значение mw для кораблей каждой страны, у которой есть корабли в базе данных.
+Решение:
+  Select country, cast(avg((power(bore,3)/2)) as numeric(6,2)) as weight
+  from (select country, classes.class, bore, name from classes 
+  left join ships on classes.class=ships.class
+  union all
+  select distinct country, class, bore, ship from classes t1 
+  left join outcomes t2 on t1.class=t2.ship
+  where ship=class and ship not in (select name from ships) ) a
+  where name IS NOT NULL group by country
+  
+Задание 4: Укажите корабли, потопленные в сражениях в Северной Атлантике (North Atlantic). Вывод: ship.
+Решение:
+  Select ship from Outcomes 
+  where result = 'sunk' and battle = 'North Atlantic'
+  
+Задание 5: По Вашингтонскому международному договору от начала 1922 г. запрещалось строить линейные корабли водоизмещением более 35 тыс.тонн. Укажите корабли, нарушившие этот договор (учитывать только корабли c известным годом спуска на воду). Вывести названия кораблей.
+Решение:
+  Select name from classes,ships 
+  where launched >=1922 and displacement>35000 and type='bb' and ships.class = classes.class
+
+Задание 6: Перечислите названия головных кораблей, имеющихся в базе данных (учесть корабли в Outcomes).
+Решение:
+  Select classes.class from Classes 
+  inner join ships on ships.name = classes.class
+  union 
+  Select classes.class from Classes 
+  inner join outcomes on outcomes.ship = classes.class
+
+Задание 7: Найдите классы, в которые входит только один корабль из базы данных (учесть также корабли в Outcomes).
+Решение:
+  select classes.class from classes 
+  left join (
+  SELECT class, name
+  FROM ships
+  UNION
+  SELECT ship, ship
+  FROM outcomes
+  ) as result 
+  on classes.class = result.class
+  group by classes.class
+  having count(result.name) = 1
+  
+Задание 8: Найдите корабли, `сохранившиеся для будущих сражений`; т.е. выведенные из строя в одной битве (damaged), они участвовали в другой, произошедшей позже.
+Решение:
+  with help as (
+  SELECT outcomes.ship, battles.name, battles.date, outcomes.result
+  FROM outcomes 
+  LEFT JOIN battles  ON outcomes.battle = battles.name)
+  select distinct h.ship from help h 
+  where upper(h.ship) 
+  in (select upper(ship) from help 
+  where help.date < h.date and help.result = 'damaged')
+  
+Задание 9: Найдите названия кораблей, потопленных в сражениях, и название сражения, в котором они были потоплены.
+Решение:
+  Select ship, battle from Outcomes 
+  where result = 'sunk'
+  
+Задание 10: Укажите сражения, которые произошли в годы, не совпадающие ни с одним из годов спуска кораблей на воду.
+Решение:
+  select name from battles 
+  where
+  datepart(year, battles.date) not in 
+  (select launched from ships 
+  where launched is not NULL)
+
+Задание 11: Найдите названия всех кораблей в базе данных, начинающихся с буквы R.
+Решение:
+  select name from Ships
+  where name LIKE 'R%'
+  UNION
+  SELECT Ship From Outcomes
+  where Ship LIKE 'R%'
+  
+Задание 12: Найдите названия всех кораблей в базе данных, состоящие из трех и более слов (например, King George V). Считать, что слова в названиях разделяются единичными пробелами, и нет концевых пробелов.
+Решение: 
+  select name from Ships
+  where name LIKE '% % %'
+  UNION
+  SELECT Ship From Outcomes
+  where Ship LIKE '% % %'
+  
+Задание 13: Для каждого корабля, участвовавшего в сражении при Гвадалканале (Guadalcanal), вывести название, водоизмещение и число орудий.
+Решение: 
+  SELECT outcomes.ship, displacement, numGuns FROM
+  (SELECT name AS ship, displacement, numGuns
+  FROM Ships JOIN Classes ON classes.class=ships.class
+  UNION
+  SELECT class AS ship, displacement, numGuns
+  FROM Classes) AS help
+  RIGHT JOIN Outcomes
+  ON outcomes.ship=help.ship
+  WHERE battle = 'Guadalcanal'
+  
+Задание 14: Найдите названия кораблей с орудиями калибра 16 дюймов (учесть корабли из таблицы Outcomes).
+Решение:
+  select name from ships 
+  inner join classes on ships.class = classes.class 
+  where bore = 16
+  union
+  SELECT Outcomes.ship
+  FROM Outcomes JOIN
+  Classes ON Classes.class = Outcomes.ship
+  WHERE bore = 16
+  
+Задание 15: Найдите сражения, в которых участвовали корабли класса Kongo из таблицы Ships.
+Решение:
+  Select distinct battle from outcomes 
+  inner join ships on outcomes.ship = ships.name 
+  where ships.class = 'Kongo'
+  
+Задание 16: С точностью до 2-х десятичных знаков определите среднее число орудий всех линейных кораблей (учесть корабли из таблицы Outcomes).
+Решение:
+  SELECT CAST(AVG(numguns*1.0) AS NUMERIC (4,2)) as AVG_nmg 
+  FROM (SELECT ship, type, numguns   FROM Outcomes 
+  LEFT JOIN Classes ON ship = class  
+  UNION  
+  SELECT name, type, numguns FROM Ships as S 
+  INNER JOIN  Classes as C ON c.class = s.class ) AS T 
+  WHERE type = 'bb'
+
+Задание 17: Для каждого класса определите год, когда был спущен на воду первый корабль этого класса. Если год спуска на воду головного корабля неизвестен, определите минимальный год спуска на воду кораблей этого класса. Вывести: класс, год.
+Решение:
+  SELECT c.class, t.y
+  FROM classes c
+  LEFT JOIN
+  (SELECT class, MIN(launched) AS y
+  FROM ships
+  GROUP BY class
+  ) AS t ON c.class = t.class
+
+Задание 18: Для каждого класса определите число кораблей этого класса, потопленных в сражениях. Вывести: класс и число потопленных кораблей.
+Решение:
+  SELECT c.class, COUNT(s.ship)
+  FROM classes c
+  LEFT JOIN
+    (
+       SELECT o.ship, sh.class
+       FROM outcomes o
+       LEFT JOIN ships sh ON sh.name = o.ship
+       WHERE o.result = 'sunk'
+    ) AS s ON s.class = c.class OR s.ship = c.class
+  GROUP BY c.class
