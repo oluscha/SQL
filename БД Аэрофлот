@@ -11,3 +11,17 @@
   SELECT MAX(cte.name),SUM(timeFlight) FROM cte
   GROUP BY cte.ID_psg
   HAVING MAX(rowNumber) = 1
+
+Задание 2: Определить имена разных пассажиров, когда-либо летевших на одном и том же месте более одного раза.
+Решение:
+  select name from passenger 
+  where ID_psg in 
+  (select ID_psg from pass_in_trip 
+  group by place, ID_psg 
+  having count(*) > 1)
+
+
+
+
+
+
